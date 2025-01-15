@@ -169,12 +169,14 @@ public class MainActivity extends AppCompatActivity {
 
             Bundle bundle = message.getData();
             boolean result = bundle.getBoolean("result");
+            int duration = bundle.getInt("duration");
+            double distance = bundle.getDouble("distance");
 
             if (result) {
                 String text = String.format(
                         "training was uploaded: %.1f | %d",
-                        Helper.upToOneDecimalPlace(training.getDistance()),
-                        training.getDuration()
+                        Helper.upToOneDecimalPlace(distance),
+                        duration
                 );
                 Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
             } else {

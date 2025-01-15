@@ -49,20 +49,22 @@ public class TinyFitnessProvider {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 Log.d(TAG, "onResponse " + response.isSuccessful());
-                MainActivity.tinyFitnessHandler.sendMessage(getTinyFitnessMessage(response.isSuccessful()));
+                MainActivity.tinyFitnessHandler.sendMessage(getTinyFitnessMessage(response.isSuccessful(), training.getDuration(), training.getDistance()));
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
                 Log.d(TAG, "onFailure");
-                MainActivity.tinyFitnessHandler.sendMessage(getTinyFitnessMessage(false));
+                MainActivity.tinyFitnessHandler.sendMessage(getTinyFitnessMessage(false, 0, 0));
             }
         });
     }
 
-    private Message getTinyFitnessMessage(boolean result) {
+    private Message getTinyFitnessMessage(boolean result, int duration, double distance) {
         Bundle bundle = new Bundle();
         bundle.putBoolean("result", result);
+        bundle.putInt("duration", duration);
+        bundle.putDouble("distance", distance);
 
         Message message = new Message();
         message.setData(bundle);
