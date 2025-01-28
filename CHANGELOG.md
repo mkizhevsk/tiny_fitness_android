@@ -6,11 +6,8 @@ All notable changes to this project will be documented in this file.
 - Placeholder for upcoming changes.
 
 ## [1.0.1] - 2025-01-28
-### Fixed
-- Resolved error parsing `code` from response in `uploadTraining`.
-
-## [1.0.0] - 2025-01-20
 ### Added
-- Initial release of the Tiny Fitness app.
-- Implemented training upload functionality.
-- Integrated Retrofit for API calls.
+- Result code ([#2](https://github.com/mkizhevsk/tiny_fitness_android/pull/2))
+
+### Changed
+- Result code ([#1](https://github.com/mkizhevsk/tiny_fitness_android/pull/1))
