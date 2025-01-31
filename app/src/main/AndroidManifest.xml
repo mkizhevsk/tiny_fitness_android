@@ -5,8 +5,8 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="true"
@@ -16,7 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name="com.mk.tiny_fitness_android.ui.MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,13 +24,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.mk.tiny_fitness_android.ui.ListActivity"></activity>
+        <activity android:name=".ui.ListActivity" />
+        <activity android:name=".ui.EditActivity" />
 
         <service
-            android:name="com.mk.tiny_fitness_android.data.service.BaseService"
+            android:name=".data.service.BaseService"
             android:description="@string/sqlite_service_desc" />
         <service
-            android:name="com.mk.tiny_fitness_android.data.service.LocationService"
+            android:name=".data.service.LocationService"
             android:description="@string/location_service_desc" />
     </application>
 </manifest>

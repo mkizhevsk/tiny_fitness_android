@@ -11,6 +11,7 @@ import android.util.Log;
 import com.mk.tiny_fitness_android.data.dto.weather.Weather;
 import com.mk.tiny_fitness_android.data.service.RetrofitService;
 import com.mk.tiny_fitness_android.data.util.Helper;
+import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
 import com.mk.tiny_fitness_android.ui.MainActivity;
 
 import retrofit2.Call;
@@ -19,34 +20,52 @@ import retrofit2.Response;
 
 public class WeatherProvider {
 
-    private static WeatherProvider ourInstance = new WeatherProvider();
-    public static WeatherProvider getInstance() {
-        return ourInstance;
+    private static WeatherProvider instance;
+    private final SharedPreferencesHelper prefs;
+
+    public static synchronized WeatherProvider getInstance(Context context) {
+        if (instance == null) {
+            instance = new WeatherProvider(context.getApplicationContext());
+        }
+        return instance;
     }
 
     private final String OPEN_WEATHER_API_URL = "https://api.openweathermap.org";
     private final String OPEN_WEATHER_APP_ID = "6e71959cff1c0c71a6049226d45c69a1";
     private final String OPEN_WEATHER_UNITS = "metric";
-    private final String OPEN_WEATHER_CITY = "izhevsk";
 
     final String TAG = "myLogs";
 
-    public WeatherProvider() {
+    public WeatherProvider(Context context) {
+        this.prefs = SharedPreferencesHelper.getInstance(context);
     }
 
     public void getTemperature() {
         Log.d(TAG, "temperature start");
 
+        String city = prefs.getCity();
+        Log.d(TAG, "Fetching weather for: " + city);
+
         RetrofitService api = Helper.getRetrofitApiWithUrl(OPEN_WEATHER_API_URL);
 
-        api.loadPojoCityWeather(OPEN_WEATHER_APP_ID, OPEN_WEATHER_UNITS, OPEN_WEATHER_CITY)
+        api.loadPojoCityWeather(OPEN_WEATHER_APP_ID, OPEN_WEATHER_UNITS, city)
                 .enqueue(new Callback<Weather>() {
 
             @Override
             public void onResponse(Call<Weather> call, Response<Weather> response) {
-                Weather weather = response.body();
-                double temperature = weather.getMain().getTemp();
+                if (!response.isSuccessful() || response.body() == null) {
+                    Log.e(TAG, "Error fetching weather: " + response.code() + " " + response.message());
+                    MainActivity.weatherHandler.sendMessage(getWeatherHandlerMessage(Double.NaN)); // Indicate failure
+                    return;
+                }
 
+                Weather weather = response.body();
+                if (weather.getMain() == null) {
+                    Log.e(TAG, "Invalid response structure: missing 'main' field");
+                    return;
+                }
+
+                double temperature = weather.getMain().getTemp();
                 MainActivity.weatherHandler.sendMessage(getWeatherHandlerMessage(temperature));
 
                 Log.d(TAG, " temperature " + weather.getVisibility() + " " + temperature);
