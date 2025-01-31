@@ -28,6 +28,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mk.tiny_fitness_android.BuildConfig;
 import com.mk.tiny_fitness_android.R;
 import com.mk.tiny_fitness_android.data.constant.TrainingType;
 import com.mk.tiny_fitness_android.data.entity.Training;
@@ -184,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showCurrentData() {
         if (WEATHER_DURATION_COUNTER == WEATHER_DURATION_COUNTER_LIMIT) {
-            WeatherProvider.getInstance().checkNetworkAndFetchWeather(MainActivity.this);
+            WeatherProvider.getInstance(this).checkNetworkAndFetchWeather(MainActivity.this);
             WEATHER_DURATION_COUNTER = 0;
         }
 
@@ -276,7 +277,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(0, 1, 0, "training history");
-        menu.add(0, 2, 1, "exit");
+        menu.add(0, 2, 1, "edit city");
+        menu.add(0, 3, 2, "exit");
+
+        String versionName = BuildConfig.VERSION_NAME;
+        menu.add(0, 4, 3, "version: " + versionName).setEnabled(false); // Disabled so it's non-clickable
+
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -296,7 +302,13 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(deletedIntent);
                 break;
 
-            case 2: // Exit
+            case 2:
+                Log.d(TAG, "edit city");
+                Intent intent = new Intent(this, EditActivity.class);
+                startActivity(intent);
+                break;
+
+            case 3: // Exit
                 finish(); // Close the activity and exit the app
                 break;
         }
@@ -326,7 +338,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "trainings " + trainings.size());
 
             startLocationService();
-            WeatherProvider.getInstance().checkNetworkAndFetchWeather(MainActivity.this);
+            WeatherProvider.getInstance(MainActivity.this).checkNetworkAndFetchWeather(MainActivity.this);
             TinyFitnessProvider.getInstance().uploadLastTraining(trainings);
 //            for(Training training : trainings) {
 //                Log.d(TAG, training.toString());
@@ -418,5 +430,4 @@ public class MainActivity extends AppCompatActivity {
 
         super.onDestroy();
     }
-
 }
