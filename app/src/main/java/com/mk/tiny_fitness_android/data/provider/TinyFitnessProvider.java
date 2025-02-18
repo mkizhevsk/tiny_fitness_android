@@ -33,6 +33,8 @@ public class TinyFitnessProvider {
 
     final String TAG = "myLogs";
 
+
+
     public void uploadTraining(Training training) {
         Log.d(TAG, "uploadTraining start: " + Build.VERSION.SDK_INT);
 

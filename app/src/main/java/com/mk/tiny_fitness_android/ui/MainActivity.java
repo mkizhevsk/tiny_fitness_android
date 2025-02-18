@@ -34,7 +34,6 @@ import com.mk.tiny_fitness_android.data.constant.TrainingType;
 import com.mk.tiny_fitness_android.data.entity.Training;
 import com.mk.tiny_fitness_android.data.provider.TinyFitnessProvider;
 import com.mk.tiny_fitness_android.data.provider.WeatherProvider;
-import com.mk.tiny_fitness_android.data.service.AuthorizationService;
 import com.mk.tiny_fitness_android.data.service.BaseService;
 import com.mk.tiny_fitness_android.data.service.LocationService;
 import com.mk.tiny_fitness_android.data.thread.DurationRunnable;
@@ -72,7 +71,6 @@ public class MainActivity extends AppCompatActivity {
     public static Handler weatherHandler;
     public static Handler tinyFitnessHandler;
 
-    private AuthorizationService authorizationService;
     private BaseService baseService;
     private LocationService locationService;
 
@@ -140,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         weatherHandler = getWeatherHandler();
         tinyFitnessHandler = getTinyFitnessHandler();
 
-        startAuthorizationService();
+        startBaseService();
     }
 
     // top right menu
@@ -345,30 +343,6 @@ public class MainActivity extends AppCompatActivity {
         createDialog.show();
     }
 
-    // AuthorizationService
-    private void startAuthorizationService() {
-        Log.d(TAG, "MainActivity startAuthorizationService()");
-        Intent intent = new Intent(this, AuthorizationService.class);
-        bindService(intent, authorizationServiceConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    private ServiceConnection authorizationServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            AuthorizationService.LocalBinder binder = (AuthorizationService.LocalBinder) service;
-            authorizationService = binder.getService();
-            Log.d(TAG, "MainActivity authorizationService onServiceConnected");
-
-            startBaseService();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-
-            Log.d(TAG, "MainActivity authorizationService onServiceDisconnected");
-        }
-    };
-
     // BaseService
     private void startBaseService() {
         Log.d(TAG, "MainActivity startBaseService()");
@@ -394,9 +368,6 @@ public class MainActivity extends AppCompatActivity {
             startLocationService();
             WeatherProvider.getInstance(MainActivity.this).checkNetworkAndFetchWeather(MainActivity.this);
             TinyFitnessProvider.getInstance().uploadLastTraining(trainings);
-//            for(Training training : trainings) {
-//                Log.d(TAG, training.toString());
-//            }
         }
 
         @Override

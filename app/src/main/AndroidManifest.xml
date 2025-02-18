@@ -33,9 +33,5 @@
         <service
             android:name=".data.service.LocationService"
             android:description="@string/location_service_desc" />
-
-        <service
-            android:name=".data.service.AuthorizationService"
-            android:description="@string/authorization_service_desc" />
     </application>
 </manifest>
