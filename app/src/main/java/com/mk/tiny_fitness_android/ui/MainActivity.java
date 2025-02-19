@@ -32,15 +32,14 @@ import com.mk.tiny_fitness_android.BuildConfig;
 import com.mk.tiny_fitness_android.R;
 import com.mk.tiny_fitness_android.data.constant.TrainingType;
 import com.mk.tiny_fitness_android.data.entity.Training;
-import com.mk.tiny_fitness_android.data.provider.TinyFitnessProvider;
 import com.mk.tiny_fitness_android.data.provider.WeatherProvider;
 import com.mk.tiny_fitness_android.data.service.BaseService;
 import com.mk.tiny_fitness_android.data.service.LocationService;
+import com.mk.tiny_fitness_android.data.service.TinyFitnessService;
 import com.mk.tiny_fitness_android.data.thread.DurationRunnable;
 import com.mk.tiny_fitness_android.data.util.Helper;
 import com.mk.tiny_fitness_android.data.util.StringRandomGenerator;
 
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -73,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
 
     private BaseService baseService;
     private LocationService locationService;
+    private TinyFitnessService tinyFitnessService;
 
     private int WEATHER_DURATION_COUNTER = 0;
     private final int WEATHER_DURATION_COUNTER_LIMIT = 30;
@@ -158,12 +158,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case 1: // Training history
-                String deletedTracksInfo;
-                try {
-                    deletedTracksInfo = Helper.getTrainingHistory(baseService.getTrainings());
-                } catch (ParseException e) {
-                    throw new RuntimeException(e);
-                }
+                String deletedTracksInfo = Helper.getTrainingHistory(baseService.getTrainings());
                 Log.d(TAG, deletedTracksInfo);
                 Intent deletedIntent = new Intent(this, ListActivity.class);
                 deletedIntent.putExtra("content", deletedTracksInfo);
@@ -314,7 +309,7 @@ public class MainActivity extends AppCompatActivity {
             training.setInternalCode(StringRandomGenerator.getInstance().getValue());
             training.setId((int) baseService.insertTraining(training));
 
-            TinyFitnessProvider.getInstance().uploadTraining(training);
+            tinyFitnessService.uploadTraining(training);
         }
     }
 
@@ -357,17 +352,10 @@ public class MainActivity extends AppCompatActivity {
             baseService = binder.getService();
             Log.d(TAG, "MainActivity baseService onServiceConnected");
 
-            List<Training> trainings;
-            try {
-                trainings = baseService.getTrainings();
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
-            Log.d(TAG, "trainings " + trainings.size());
-
             startLocationService();
+            startTinyFitnessService();
             WeatherProvider.getInstance(MainActivity.this).checkNetworkAndFetchWeather(MainActivity.this);
-            TinyFitnessProvider.getInstance().uploadLastTraining(trainings);
+//            TinyFitnessProvider.getInstance().uploadLastTraining(trainings);
         }
 
         @Override
@@ -398,6 +386,32 @@ public class MainActivity extends AppCompatActivity {
 
             LocationService.running = true;
             locationService.getLocationUpdates();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "MainActivity locationService onServiceDisconnected");
+        }
+    };
+
+    // TinyFitnessService
+    private void startTinyFitnessService() {
+        Log.d(TAG, "MainActivity startTinyFitnessService()");
+        Intent intent = new Intent(this, TinyFitnessService.class);
+        bindService(intent, tinyServiceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    private ServiceConnection tinyServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            TinyFitnessService.LocalBinder binder = (TinyFitnessService.LocalBinder) service;
+            tinyFitnessService = binder.getService();
+            Log.d(TAG, "MainActivity tinyFitnessService onServiceConnected");
+
+            List<Training> trainings = baseService.getTrainings();
+            Log.d(TAG, "trainings " + trainings.size());
+
+            tinyFitnessService.uploadLastTraining(trainings);
         }
 
         @Override

@@ -1,24 +1,22 @@
-package com.mk.tiny_fitness_android.data.provider;
+package com.mk.tiny_fitness_android.data.service;
 
-import android.content.Context;
+import android.app.Service;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.Message;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.mk.tiny_fitness_android.data.entity.Training;
-import com.mk.tiny_fitness_android.data.service.RetrofitService;
 import com.mk.tiny_fitness_android.data.util.Helper;
-import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
-import com.mk.tiny_fitness_android.ui.LoginActivity;
 import com.mk.tiny_fitness_android.ui.MainActivity;
 
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import okhttp3.ResponseBody;
@@ -26,79 +24,41 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class TinyFitnessProvider {
+public class TinyFitnessService extends Service {
 
-    private static TinyFitnessProvider ourInstance = new TinyFitnessProvider();
-    public static TinyFitnessProvider getInstance() {
-        return ourInstance;
-    }
+    private final IBinder mBinder = new TinyFitnessService.LocalBinder();
 
     private final String HTTPS_TINY_FITNESS_URL = "https://tiny-fitness.ru/api/";
     private final String HTTP_TINY_FITNESS_URL = "http://tiny-fitness.ru/api/";
 
     final String TAG = "myLogs";
 
-    public void authorize(Context context) {
-        SharedPreferencesHelper prefs = SharedPreferencesHelper.getInstance(context);
-        String apiKey = prefs.getApiKey();
+    public void onCreate() {
+        super.onCreate();
 
-        if (apiKey == null || apiKey.isEmpty()) {
-            Log.e(TAG, "API Key missing. Redirecting to login.");
-            redirectToLogin(context);
-            return;
-        }
-
-        RetrofitService api = getRetrofitService();
-
-        // Call refresh-api-key
-        api.refreshApiKey(apiKey).enqueue(new Callback<ResponseBody>() {
-            @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    try {
-                        // Extract new API key from response body
-                        String newApiKey = response.body().string().trim();
-                        Log.d(TAG, "API Key refreshed successfully: " + newApiKey);
-
-                        // Save updated API key
-                        prefs.saveApiKey(newApiKey);
-                    } catch (IOException e) {
-                        Log.e(TAG, "Error reading API key from response: " + e.getMessage());
-                        redirectToLogin(context);
-                    }
-                } else {
-                    int statusCode = response.code();
-                    Log.e(TAG, "API Key refresh failed with status: " + statusCode);
-
-                    // Handle authentication failures
-                    if (statusCode == 401 || statusCode == 403 || statusCode == 404) {
-                        redirectToLogin(context);
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Log.e(TAG, "API Request Failed: " + t.getMessage());
-                redirectToLogin(context);
-            }
-        });
+        Log.d(TAG, "BaseService onCreate");
     }
 
-    private void redirectToLogin(Context context) {
-        Intent intent = new Intent(context, LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        context.startActivity(intent);
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "TinyFitnessService onStartCommand");
+        return super.onStartCommand(intent, flags, startId);
     }
 
-    private RetrofitService getRetrofitService() {
-        RetrofitService api;
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-            api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
-        } else {
-            api = Helper.getRetrofitApiWithUrlAndAuth(HTTP_TINY_FITNESS_URL);
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "TinyFitnessService onDestroy");
+    }
+
+    public class LocalBinder extends Binder {
+        public TinyFitnessService getService() {
+            return TinyFitnessService.this;
         }
-        return api;
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
     }
 
     public void uploadTraining(Training training) {
@@ -143,9 +103,9 @@ public class TinyFitnessProvider {
 
                     @Override
                     public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Log.d(TAG, "onFailure");
-            }
-        });
+                        Log.d(TAG, "onFailure");
+                    }
+                });
     }
 
     private Message getTinyFitnessMessage(int duration, double distance) {
@@ -165,17 +125,22 @@ public class TinyFitnessProvider {
             return;
         }
 
-        Collections.sort(trainings, new Comparator<Training>() {
-            @Override
-            public int compare(Training t1, Training t2) {
-                return t2.getDateTime().compareTo(t1.getDateTime());
-            }
-        });
+        Collections.sort(trainings, (t1, t2) -> t2.getDateTime().compareTo(t1.getDateTime()));
 
         Training lastTraining = trainings.get(0);
         Log.d(TAG, "Most recent training found: " + lastTraining);
 
         uploadTraining(lastTraining);
+    }
+
+    private RetrofitService getRetrofitService() {
+        RetrofitService api;
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+            api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+        } else {
+            api = Helper.getRetrofitApiWithUrlAndAuth(HTTP_TINY_FITNESS_URL);
+        }
+        return api;
     }
 
 }
