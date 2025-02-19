@@ -7,6 +7,7 @@ public class SharedPreferencesHelper {
 
     private static final String PREF_NAME = "app_prefs";
     private static final String KEY_CITY = "city_name";
+    private static final String KEY_API_KEY = "api_key";
 
     private static SharedPreferencesHelper instance;
     private final SharedPreferences sharedPreferences;
@@ -30,6 +31,14 @@ public class SharedPreferencesHelper {
 
     public String getCity() {
         return sharedPreferences.getString(KEY_CITY, DEFAULT_WEATHER_CITY);
+    }
+
+    public void saveApiKey(String apiKey) {
+        sharedPreferences.edit().putString(KEY_API_KEY, apiKey).apply();
+    }
+
+    public String getApiKey() {
+        return sharedPreferences.getString(KEY_API_KEY, null);
     }
 
     public void clearAll() {

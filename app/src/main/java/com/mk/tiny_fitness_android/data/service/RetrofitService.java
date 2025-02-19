@@ -5,6 +5,7 @@ import com.mk.tiny_fitness_android.data.dto.weather.Weather;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.GET;
+import retrofit2.http.POST;
 import retrofit2.http.Query;
 
 public interface RetrofitService {
@@ -17,4 +18,7 @@ public interface RetrofitService {
 
     @GET("addTraining")
     Call<ResponseBody> saveTraining(@Query("internalCode") String internalCode, @Query("date") String date, @Query("distance") double distance, @Query("duration") int duration, @Query("type") int type);
+
+    @POST("refresh-api-key")
+    Call<ResponseBody> refreshApiKey(@Query("apiKey") String apiKey);
 }
