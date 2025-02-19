@@ -11,6 +11,7 @@ import com.mk.tiny_fitness_android.data.entity.Training;
 import com.mk.tiny_fitness_android.data.service.RetrofitService;
 import com.mk.tiny_fitness_android.data.util.Helper;
 import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
+import com.mk.tiny_fitness_android.ui.LoginActivity;
 import com.mk.tiny_fitness_android.ui.MainActivity;
 
 import org.json.JSONObject;
