@@ -2,6 +2,7 @@ package com.mk.tiny_fitness_android.ui;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -252,11 +253,13 @@ public class MainActivity extends AppCompatActivity {
             WEATHER_DURATION_COUNTER = 0;
         }
 
-        durationTextView.setText(Helper.getStringDuration(training.getDuration()));
-        String kmUnit = this.getString(R.string.unit_km);
-        distanceTextView.setText(Helper.getStringDistance(training.getDistance(), kmUnit));
-        if (accuracy != -100)
-            accuracyTextView.setText(Helper.getStringAccuracy(accuracy));
+        if (training != null) {
+            durationTextView.setText(Helper.getStringDuration(training.getDuration()));
+            String kmUnit = this.getString(R.string.unit_km);
+            distanceTextView.setText(Helper.getStringDistance(training.getDistance(), kmUnit));
+            if (accuracy != -100)
+                accuracyTextView.setText(Helper.getStringAccuracy(accuracy));
+        }
     }
 
     // startFinishButton
@@ -353,7 +356,6 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "MainActivity baseService onServiceConnected");
 
             startLocationService();
-            startTinyFitnessService();
             WeatherProvider.getInstance(MainActivity.this).checkNetworkAndFetchWeather(MainActivity.this);
 //            TinyFitnessProvider.getInstance().uploadLastTraining(trainings);
         }
@@ -365,16 +367,29 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private boolean isBaseServiceRunning() {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (BaseService.class.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // LocationService
     private void startLocationService() {
         Log.d(TAG, "MainActivity startLocationService()");
         Intent intent = new Intent(this, LocationService.class);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent);
+            startForegroundService(intent);  // Start foreground service
         } else {
-            bindService(intent, locationServiceConnection, Context.BIND_AUTO_CREATE);
+            startService(intent);  // Start normally for older versions
         }
+
+        // Ensure we bind to the service to get a reference
+        bindService(intent, locationServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
     private ServiceConnection locationServiceConnection = new ServiceConnection() {
@@ -386,6 +401,7 @@ public class MainActivity extends AppCompatActivity {
 
             LocationService.running = true;
             locationService.getLocationUpdates();
+            startTinyFitnessService();
         }
 
         @Override
@@ -393,6 +409,16 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "MainActivity locationService onServiceDisconnected");
         }
     };
+
+    private boolean isLocationServiceRunning() {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (LocationService.class.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     // TinyFitnessService
     private void startTinyFitnessService() {
@@ -411,7 +437,8 @@ public class MainActivity extends AppCompatActivity {
             List<Training> trainings = baseService.getTrainings();
             Log.d(TAG, "trainings " + trainings.size());
 
-            tinyFitnessService.uploadLastTraining(trainings);
+            tinyFitnessService.authorize(MainActivity.this, trainings);
+//            tinyFitnessService.uploadLastTraining(trainings);
         }
 
         @Override
@@ -419,6 +446,26 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "MainActivity locationService onServiceDisconnected");
         }
     };
+
+    private boolean isTinyFitnessServiceRunning() {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (TinyFitnessService.class.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "MainActivity onResume() - Checking and restarting services");
+
+        if (!isBaseServiceRunning()) startBaseService();
+        if (!isLocationServiceRunning()) startLocationService();
+        if (!isTinyFitnessServiceRunning()) startTinyFitnessService();
+    }
 
     @Override
     protected void onDestroy() {
@@ -433,10 +480,13 @@ public class MainActivity extends AppCompatActivity {
         if (baseServiceConnection != null)
             unbindService(baseServiceConnection);
 
+        stopService(new Intent(this, TinyFitnessService.class));
+        if (tinyFitnessService != null)
+            unbindService(tinyServiceConnection);
+
         LocationService.running = false;
         stopService(new Intent(this, LocationService.class));
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O && locationServiceConnection != null)
+        if (locationServiceConnection != null)
             unbindService(locationServiceConnection);
 
         training = null;

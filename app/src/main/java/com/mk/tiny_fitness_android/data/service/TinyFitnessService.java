@@ -1,6 +1,7 @@
 package com.mk.tiny_fitness_android.data.service;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
@@ -12,10 +13,13 @@ import android.util.Log;
 
 import com.mk.tiny_fitness_android.data.entity.Training;
 import com.mk.tiny_fitness_android.data.util.Helper;
+import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
+import com.mk.tiny_fitness_android.ui.LoginActivity;
 import com.mk.tiny_fitness_android.ui.MainActivity;
 
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -59,6 +63,61 @@ public class TinyFitnessService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
+    }
+
+    public void authorize(Context context, List<Training> trainings) {
+        SharedPreferencesHelper prefs = SharedPreferencesHelper.getInstance(context);
+        String apiKey = prefs.getApiKey();
+
+        if (apiKey == null || apiKey.isEmpty()) {
+            Log.e(TAG, "API Key missing. Redirecting to login.");
+            redirectToLogin(context);
+            return;
+        }
+
+        // Initialize Retrofit with the correct API URL
+        RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+
+        // Call refresh-api-key
+        api.refreshApiKey(apiKey).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    try {
+                        // Extract new API key from response body
+                        String newApiKey = response.body().string().trim();
+                        Log.d(TAG, "API Key refreshed successfully: " + newApiKey);
+
+                        // Save updated API key
+                        prefs.saveApiKey(newApiKey);
+                        uploadLastTraining(trainings);
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error reading API key from response: " + e.getMessage());
+                        redirectToLogin(context);
+                    }
+                } else {
+                    int statusCode = response.code();
+                    Log.e(TAG, "API Key refresh failed with status: " + statusCode);
+
+                    // Handle authentication failures
+                    if (statusCode == 401 || statusCode == 403 || statusCode == 404) {
+                        redirectToLogin(context);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.e(TAG, "API Request Failed: " + t.getMessage());
+                redirectToLogin(context);
+            }
+        });
+    }
+
+    private void redirectToLogin(Context context) {
+        Intent intent = new Intent(context, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        context.startActivity(intent);
     }
 
     public void uploadTraining(Training training) {
