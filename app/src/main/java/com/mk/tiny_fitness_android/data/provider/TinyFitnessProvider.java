@@ -1,19 +1,16 @@
-package com.mk.tiny_fitness_android.data.service;
+package com.mk.tiny_fitness_android.data.provider;
 
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.mk.tiny_fitness_android.data.entity.Training;
+import com.mk.tiny_fitness_android.data.service.RetrofitService;
 import com.mk.tiny_fitness_android.data.util.Helper;
 import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
 import com.mk.tiny_fitness_android.ui.RequestCodeActivity;
@@ -30,72 +27,27 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class TinyFitnessService extends Service {
+public class TinyFitnessProvider {
 
-    private static TinyFitnessService instance;
+    private static TinyFitnessProvider ourInstance = new TinyFitnessProvider();
+    public static TinyFitnessProvider getInstance() {
+        return ourInstance;
+    }
 
-    private final IBinder mBinder = new TinyFitnessService.LocalBinder();
+    private List<Training> trainings;
+    private String email;
 
-//    private final String HTTPS_TINY_FITNESS_URL = "https://tiny-fitness.ru/api/";
-private final String HTTPS_TINY_FITNESS_URL = "https://localhost:8080/api/";
+    private final String HTTPS_TINY_FITNESS_URL = "https://tiny-fitness.ru/api/";
+//    private final String HTTPS_TINY_FITNESS_URL = "http://localhost:8080/api/";
     private final String HTTP_TINY_FITNESS_URL = "http://tiny-fitness.ru/api/";
 
     final String TAG = "myLogs";
 
-    public static TinyFitnessService getInstance() {
-        return instance;
-    }
-
-    public void onCreate() {
-        super.onCreate();
-        instance = this;
-
-        Log.d(TAG, "BaseService onCreate");
-    }
-
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "TinyFitnessService onStartCommand");
-        return START_STICKY;
-    }
-
-    public void onDestroy() {
-        super.onDestroy();
-        instance = null;
-        Log.d(TAG, "TinyFitnessService onDestroy");
-    }
-
-    public class LocalBinder extends Binder {
-        public TinyFitnessService getService() {
-            return TinyFitnessService.this;
-        }
-    }
-
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return mBinder;
-    }
-
-    public void requestCode(String email, RequestCallback<String> callback) {
-        // Simulate network request (Replace this with actual API call)
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (email.equals("test@example.com")) {
-                callback.onSuccess("mocked_api_key");
-            } else {
-                callback.onFailure(new Exception("Invalid email"));
-            }
-        }, 2000); // Simulating network delay
-    }
-
-    public interface RequestCallback<T> {
-        void onSuccess(T response);
-        void onFailure(Throwable t);
-    }
-
-
     public void authorize(Context context, List<Training> trainings) {
+        this.trainings = trainings;
+
         SharedPreferencesHelper prefs = SharedPreferencesHelper.getInstance(context);
-        String apiKey = prefs.getApiKey();
+        String apiKey = "-ce6f11ab4bb486a98446ede670885c01"; //prefs.getApiKey();
 
         if (apiKey == null || apiKey.isEmpty()) {
             Log.e(TAG, "API Key missing. Redirecting to login.");
@@ -103,10 +55,8 @@ private final String HTTPS_TINY_FITNESS_URL = "https://localhost:8080/api/";
             return;
         }
 
-        // Initialize Retrofit with the correct API URL
         RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
 
-        // Call refresh-api-key
         api.refreshApiKey(apiKey).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -118,7 +68,7 @@ private final String HTTPS_TINY_FITNESS_URL = "https://localhost:8080/api/";
 
                         // Save updated API key
                         prefs.saveApiKey(newApiKey);
-                        uploadLastTraining(trainings);
+                        uploadLastTraining();
                     } catch (IOException e) {
                         Log.e(TAG, "Error reading API key from response: " + e.getMessage());
                         redirectToLogin(context);
@@ -148,13 +98,75 @@ private final String HTTPS_TINY_FITNESS_URL = "https://localhost:8080/api/";
         context.startActivity(intent);
     }
 
+    public void requestCode(String email, RequestCallback<String> callback) {
+
+        this.email = email;
+        RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+
+        Call<ResponseBody> call = api.requestCode(email);
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess("Verification code sent");
+                } else {
+                    callback.onFailure(new Exception("Failed to send verification code"));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                callback.onFailure(new Exception("Network error: " + t.getMessage()));
+            }
+        });
+    }
+
+    public void verifyCode(String code, RequestCallback<String> callback) {
+
+        RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+
+        Call<ResponseBody> call = api.verifyCode(this.email, code, deviceId);
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    try {
+                        String responseBody = response.body().string();
+                        callback.onSuccess(responseBody);
+                    } catch (IOException e) {
+                        callback.onFailure(new Exception("Error reading response"));
+                    }
+                } else {
+                    callback.onFailure(new Exception("Verification failed"));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                callback.onFailure(new Exception("Network error: " + t.getMessage()));
+            }
+        });
+    }
+
+
+
+    public interface RequestCallback<T> {
+        void onSuccess(T response);
+        void onFailure(Throwable t);
+    }
+
     public void uploadTraining(Training training) {
         Log.d(TAG, "uploadTraining start: " + Build.VERSION.SDK_INT);
 
-        RetrofitService api = getRetrofitService();
+        RetrofitService api;
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+            api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+        } else {
+            api = Helper.getRetrofitApiWithUrlAndAuth(HTTP_TINY_FITNESS_URL);
+        }
+
         String date = Helper.getStringDateTimeForApi(training.getDateTime());
         Log.d(TAG, date);
-
         api.saveTraining(training.getInternalCode(), date, training.getDistance(), training.getDuration(), training.getType())
                 .enqueue(new Callback<ResponseBody>() {
 
@@ -206,8 +218,8 @@ private final String HTTPS_TINY_FITNESS_URL = "https://localhost:8080/api/";
         return message;
     }
 
-    public void uploadLastTraining(List<Training> trainings) {
-        if (trainings == null || trainings.isEmpty()) {
+    public void uploadLastTraining() {
+        if (this.trainings == null || this.trainings.isEmpty()) {
             Log.d(TAG, "No trainings to save.");
             return;
         }
@@ -218,16 +230,6 @@ private final String HTTPS_TINY_FITNESS_URL = "https://localhost:8080/api/";
         Log.d(TAG, "Most recent training found: " + lastTraining);
 
         uploadTraining(lastTraining);
-    }
-
-    private RetrofitService getRetrofitService() {
-        RetrofitService api;
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-            api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
-        } else {
-            api = Helper.getRetrofitApiWithUrlAndAuth(HTTP_TINY_FITNESS_URL);
-        }
-        return api;
     }
 
 }

@@ -33,6 +33,7 @@ import com.mk.tiny_fitness_android.BuildConfig;
 import com.mk.tiny_fitness_android.R;
 import com.mk.tiny_fitness_android.data.constant.TrainingType;
 import com.mk.tiny_fitness_android.data.entity.Training;
+import com.mk.tiny_fitness_android.data.provider.TinyFitnessProvider;
 import com.mk.tiny_fitness_android.data.provider.WeatherProvider;
 import com.mk.tiny_fitness_android.data.service.BaseService;
 import com.mk.tiny_fitness_android.data.service.LocationService;
@@ -355,9 +356,12 @@ public class MainActivity extends AppCompatActivity {
             baseService = binder.getService();
             Log.d(TAG, "MainActivity baseService onServiceConnected");
 
+            List<Training> trainings = baseService.getTrainings();
+            Log.d(TAG, "trainings " + trainings.size());
+
             startLocationService();
             WeatherProvider.getInstance(MainActivity.this).checkNetworkAndFetchWeather(MainActivity.this);
-//            TinyFitnessProvider.getInstance().uploadLastTraining(trainings);
+            TinyFitnessProvider.getInstance().authorize(MainActivity.this, trainings);
         }
 
         @Override
@@ -367,15 +371,15 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private boolean isBaseServiceRunning() {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (BaseService.class.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
+//    private boolean isBaseServiceRunning() {
+//        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+//        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+//            if (BaseService.class.getName().equals(service.service.getClassName())) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
 
     // LocationService
     private void startLocationService() {
@@ -401,7 +405,6 @@ public class MainActivity extends AppCompatActivity {
 
             LocationService.running = true;
             locationService.getLocationUpdates();
-            startTinyFitnessService();
         }
 
         @Override
@@ -410,61 +413,60 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private boolean isLocationServiceRunning() {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (LocationService.class.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
+//    private boolean isLocationServiceRunning() {
+//        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+//        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+//            if (LocationService.class.getName().equals(service.service.getClassName())) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
 
     // TinyFitnessService
-    private void startTinyFitnessService() {
-        Log.d(TAG, "MainActivity startTinyFitnessService()");
-        Intent intent = new Intent(this, TinyFitnessService.class);
-        bindService(intent, tinyServiceConnection, Context.BIND_AUTO_CREATE);
-    }
+//    private void startTinyFitnessService() {
+//        Log.d(TAG, "MainActivity startTinyFitnessService()");
+//        Intent intent = new Intent(this, TinyFitnessService.class);
+//        bindService(intent, tinyServiceConnection, Context.BIND_AUTO_CREATE);
+//    }
+//
+//    private ServiceConnection tinyServiceConnection = new ServiceConnection() {
+//        @Override
+//        public void onServiceConnected(ComponentName name, IBinder service) {
+//            TinyFitnessService.LocalBinder binder = (TinyFitnessService.LocalBinder) service;
+//            tinyFitnessService = binder.getService();
+//            Log.d(TAG, "MainActivity tinyFitnessService onServiceConnected");
+//
+//            List<Training> trainings = baseService.getTrainings();
+//            Log.d(TAG, "trainings " + trainings.size());
+//
+//            tinyFitnessService.authorize(MainActivity.this, trainings);
+//        }
+//
+//        @Override
+//        public void onServiceDisconnected(ComponentName name) {
+//            Log.d(TAG, "MainActivity locationService onServiceDisconnected");
+//        }
+//    };
 
-    private ServiceConnection tinyServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            TinyFitnessService.LocalBinder binder = (TinyFitnessService.LocalBinder) service;
-            tinyFitnessService = binder.getService();
-            Log.d(TAG, "MainActivity tinyFitnessService onServiceConnected");
-
-            List<Training> trainings = baseService.getTrainings();
-            Log.d(TAG, "trainings " + trainings.size());
-
-            tinyFitnessService.authorize(MainActivity.this, trainings);
-//            tinyFitnessService.uploadLastTraining(trainings);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            Log.d(TAG, "MainActivity locationService onServiceDisconnected");
-        }
-    };
-
-    private boolean isTinyFitnessServiceRunning() {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (TinyFitnessService.class.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
-    }
+//    private boolean isTinyFitnessServiceRunning() {
+//        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+//        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+//            if (TinyFitnessService.class.getName().equals(service.service.getClassName())) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
 
     @Override
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "MainActivity onResume() - Checking and restarting services");
 
-        if (!isBaseServiceRunning()) startBaseService();
-        if (!isLocationServiceRunning()) startLocationService();
-        if (!isTinyFitnessServiceRunning()) startTinyFitnessService();
+//        if (!isBaseServiceRunning()) startBaseService();
+//        if (!isLocationServiceRunning()) startLocationService();
+//        if (!isTinyFitnessServiceRunning()) startTinyFitnessService();
     }
 
     @Override
@@ -480,9 +482,9 @@ public class MainActivity extends AppCompatActivity {
         if (baseServiceConnection != null)
             unbindService(baseServiceConnection);
 
-        stopService(new Intent(this, TinyFitnessService.class));
-        if (tinyFitnessService != null)
-            unbindService(tinyServiceConnection);
+//        stopService(new Intent(this, TinyFitnessService.class));
+//        if (tinyFitnessService != null)
+//            unbindService(tinyServiceConnection);
 
         LocationService.running = false;
         stopService(new Intent(this, LocationService.class));
