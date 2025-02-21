@@ -25,4 +25,8 @@ public class StringRandomGenerator {
     public String getValue() {
         return generateString(14);
     }
+
+    public String getShortValue() {
+        return generateString(3);
+    }
 }

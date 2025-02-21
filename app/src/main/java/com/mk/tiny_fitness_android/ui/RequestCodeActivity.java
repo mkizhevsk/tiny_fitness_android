@@ -10,7 +10,6 @@ import android.widget.Toast;
 
 import com.mk.tiny_fitness_android.R;
 import com.mk.tiny_fitness_android.data.provider.TinyFitnessProvider;
-import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
 
 public class RequestCodeActivity extends Activity {
     private static final String TAG = "RequestCodeActivity";
@@ -38,11 +37,10 @@ public class RequestCodeActivity extends Activity {
             return;
         }
 
-        TinyFitnessProvider.getInstance().requestCode(email, new TinyFitnessProvider.RequestCallback<String>() {
+        TinyFitnessProvider.getInstance(this).requestCode(email, new TinyFitnessProvider.RequestCallback<String>() {
             @Override
             public void onSuccess(String response) {
-                Log.d(TAG, "requestCode(): " + response);
-//                SharedPreferencesHelper.getInstance(RequestCodeActivity.this).saveApiKey(apiKey);
+                Log.d(TAG, "requestCode() response: " + response);
 
                 Intent intent = new Intent(RequestCodeActivity.this, CodeSentActivity.class);
                 startActivity(intent);

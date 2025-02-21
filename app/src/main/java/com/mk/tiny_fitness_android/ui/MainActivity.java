@@ -40,6 +40,7 @@ import com.mk.tiny_fitness_android.data.service.LocationService;
 import com.mk.tiny_fitness_android.data.service.TinyFitnessService;
 import com.mk.tiny_fitness_android.data.thread.DurationRunnable;
 import com.mk.tiny_fitness_android.data.util.Helper;
+import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
 import com.mk.tiny_fitness_android.data.util.StringRandomGenerator;
 
 import java.util.ArrayList;
@@ -98,6 +99,13 @@ public class MainActivity extends AppCompatActivity {
 
         start = false;
         finish = false;
+
+        if (SharedPreferencesHelper.getInstance(this).isFirstLaunch()) {
+            Toast.makeText(this, "First Launch!", Toast.LENGTH_SHORT).show();
+        } else {
+            String deviceId = SharedPreferencesHelper.getInstance(this).getDeviceId();
+            Toast.makeText(this, "Welcome back! " + deviceId, Toast.LENGTH_SHORT).show();
+        }
 
         if (checkPermissions(this, this)) {
             Log.d(TAG, "permission granted by default");
@@ -361,7 +369,7 @@ public class MainActivity extends AppCompatActivity {
 
             startLocationService();
             WeatherProvider.getInstance(MainActivity.this).checkNetworkAndFetchWeather(MainActivity.this);
-            TinyFitnessProvider.getInstance().authorize(MainActivity.this, trainings);
+            TinyFitnessProvider.getInstance(MainActivity.this).authorize(MainActivity.this, trainings);
         }
 
         @Override

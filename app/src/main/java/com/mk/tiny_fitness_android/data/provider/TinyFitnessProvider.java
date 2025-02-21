@@ -4,8 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
@@ -13,9 +11,10 @@ import com.mk.tiny_fitness_android.data.entity.Training;
 import com.mk.tiny_fitness_android.data.service.RetrofitService;
 import com.mk.tiny_fitness_android.data.util.Helper;
 import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
-import com.mk.tiny_fitness_android.ui.RequestCodeActivity;
 import com.mk.tiny_fitness_android.ui.MainActivity;
+import com.mk.tiny_fitness_android.ui.RequestCodeActivity;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -29,25 +28,34 @@ import retrofit2.Response;
 
 public class TinyFitnessProvider {
 
-    private static TinyFitnessProvider ourInstance = new TinyFitnessProvider();
-    public static TinyFitnessProvider getInstance() {
-        return ourInstance;
-    }
-
+    private static TinyFitnessProvider instance;
+    private final Context context;
     private List<Training> trainings;
     private String email;
 
     private final String HTTPS_TINY_FITNESS_URL = "https://tiny-fitness.ru/api/";
-//    private final String HTTPS_TINY_FITNESS_URL = "http://localhost:8080/api/";
+    //    private final String HTTPS_TINY_FITNESS_URL = "http://localhost:8080/api/";
     private final String HTTP_TINY_FITNESS_URL = "http://tiny-fitness.ru/api/";
 
     final String TAG = "myLogs";
+
+    private TinyFitnessProvider(Context context) {
+        this.context = context.getApplicationContext(); // Avoid Activity Context to prevent memory leaks
+    }
+
+    public static synchronized TinyFitnessProvider getInstance(Context context) {
+        if (instance == null) {
+            instance = new TinyFitnessProvider(context);
+        }
+        return instance;
+    }
 
     public void authorize(Context context, List<Training> trainings) {
         this.trainings = trainings;
 
         SharedPreferencesHelper prefs = SharedPreferencesHelper.getInstance(context);
-        String apiKey = "-ce6f11ab4bb486a98446ede670885c01"; //prefs.getApiKey();
+        Log.d(TAG, "Stored API Key: " + prefs.getApiKey());
+        String apiKey = prefs.getApiKey();
 
         if (apiKey == null || apiKey.isEmpty()) {
             Log.e(TAG, "API Key missing. Redirecting to login.");
@@ -62,25 +70,21 @@ public class TinyFitnessProvider {
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     try {
-                        // Extract new API key from response body
-                        String newApiKey = response.body().string().trim();
+                        String responseBody = response.body().string();
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        String newApiKey = jsonResponse.getString("refreshedKey");
+
                         Log.d(TAG, "API Key refreshed successfully: " + newApiKey);
 
-                        // Save updated API key
                         prefs.saveApiKey(newApiKey);
                         uploadLastTraining();
-                    } catch (IOException e) {
+                    } catch (IOException | JSONException e) {
                         Log.e(TAG, "Error reading API key from response: " + e.getMessage());
                         redirectToLogin(context);
                     }
                 } else {
-                    int statusCode = response.code();
-                    Log.e(TAG, "API Key refresh failed with status: " + statusCode);
-
-                    // Handle authentication failures
-                    if (statusCode == 401 || statusCode == 403 || statusCode == 404) {
-                        redirectToLogin(context);
-                    }
+                    Log.e(TAG, "API key refresh failed. Response code: " + response.code());
+                    redirectToLogin(context);
                 }
             }
 
@@ -123,6 +127,8 @@ public class TinyFitnessProvider {
 
     public void verifyCode(String code, RequestCallback<String> callback) {
 
+        String deviceId = SharedPreferencesHelper.getInstance(context).getDeviceId();
+        Log.d(TAG, "deviceId: " + deviceId);
         RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
 
         Call<ResponseBody> call = api.verifyCode(this.email, code, deviceId);
@@ -147,8 +153,6 @@ public class TinyFitnessProvider {
             }
         });
     }
-
-
 
     public interface RequestCallback<T> {
         void onSuccess(T response);

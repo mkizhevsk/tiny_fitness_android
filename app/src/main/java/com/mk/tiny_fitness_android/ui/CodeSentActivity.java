@@ -12,6 +12,9 @@ import com.mk.tiny_fitness_android.R;
 import com.mk.tiny_fitness_android.data.provider.TinyFitnessProvider;
 import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class CodeSentActivity extends Activity {
 
     private static final String TAG = "CodeSentActivity";
@@ -40,18 +43,23 @@ public class CodeSentActivity extends Activity {
 
         Log.d(TAG, "code: " + code);
 
-        TinyFitnessProvider.getInstance().requestCode(code, new TinyFitnessProvider.RequestCallback<String>() {
+        TinyFitnessProvider.getInstance(this).verifyCode(code, new TinyFitnessProvider.RequestCallback<String>() {
             @Override
-            public void onSuccess(String apiKey) {
-                Log.d(TAG, "Login successful, API Key: " + apiKey);
+            public void onSuccess(String response) {
+                try {
+                    JSONObject jsonResponse = new JSONObject(response);
+                    String apiKey = jsonResponse.getString("apiKey");
 
-                // Save API key
-                SharedPreferencesHelper.getInstance(CodeSentActivity.this).saveApiKey(apiKey);
+                    Log.d(TAG, "Login successful, API Key: " + apiKey);
 
-                // Navigate to MainActivity
-                Intent intent = new Intent(CodeSentActivity.this, MainActivity.class);
-                startActivity(intent);
-                finish();
+                    SharedPreferencesHelper.getInstance(CodeSentActivity.this).saveApiKey(apiKey);
+
+                    Intent intent = new Intent(CodeSentActivity.this, MainActivity.class);
+                    startActivity(intent);
+                    finish();
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error parsing API key from response: " + e.getMessage());
+                }
             }
 
             @Override
