@@ -1,10 +1,14 @@
 package com.mk.tiny_fitness_android.data.service;
 
+import com.google.gson.JsonObject;
 import com.mk.tiny_fitness_android.data.dto.weather.Weather;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
+import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.Header;
+import retrofit2.http.Headers;
 import retrofit2.http.POST;
 import retrofit2.http.Query;
 
@@ -22,6 +26,13 @@ public interface RetrofitService {
             @Query("APPID") String appId,
             @Query("units") String units,
             @Query("q") String city
+    );
+
+    @POST("addTraining")
+    @Headers("Content-Type: application/json")
+    Call<ResponseBody> addTraining(
+            @Header("x-api-key") String apiKey,
+            @Body JsonObject trainingData
     );
 
     @GET("addTraining")
