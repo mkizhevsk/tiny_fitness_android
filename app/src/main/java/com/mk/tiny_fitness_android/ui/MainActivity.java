@@ -320,7 +320,7 @@ public class MainActivity extends AppCompatActivity {
             training.setInternalCode(StringRandomGenerator.getInstance().getValue());
             training.setId((int) baseService.insertTraining(training));
 
-            TinyFitnessProvider.getInstance(this).uploadTraining(training);
+            TinyFitnessProvider.getInstance(this).uploadTrainingPost(training);
         }
     }
 
@@ -369,7 +369,7 @@ public class MainActivity extends AppCompatActivity {
 
             startLocationService();
             WeatherProvider.getInstance(MainActivity.this).checkNetworkAndFetchWeather(MainActivity.this);
-            TinyFitnessProvider.getInstance(MainActivity.this).authorize(MainActivity.this, trainings);
+            TinyFitnessProvider.getInstance(MainActivity.this).authorize(trainings);
         }
 
         @Override

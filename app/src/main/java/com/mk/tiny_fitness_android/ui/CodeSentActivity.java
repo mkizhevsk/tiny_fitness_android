@@ -10,10 +10,6 @@ import android.widget.Toast;
 
 import com.mk.tiny_fitness_android.R;
 import com.mk.tiny_fitness_android.data.provider.TinyFitnessProvider;
-import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class CodeSentActivity extends Activity {
 
@@ -45,21 +41,12 @@ public class CodeSentActivity extends Activity {
 
         TinyFitnessProvider.getInstance(this).verifyCode(code, new TinyFitnessProvider.RequestCallback<String>() {
             @Override
-            public void onSuccess(String response) {
-                try {
-                    JSONObject jsonResponse = new JSONObject(response);
-                    String apiKey = jsonResponse.getString("apiKey");
+            public void onSuccess(String apiKey) {
+                Log.d(TAG, "Login successful, API Key: " + apiKey);
 
-                    Log.d(TAG, "Login successful, API Key: " + apiKey);
-
-                    SharedPreferencesHelper.getInstance(CodeSentActivity.this).saveApiKey(apiKey);
-
-                    Intent intent = new Intent(CodeSentActivity.this, MainActivity.class);
-                    startActivity(intent);
-                    finish();
-                } catch (JSONException e) {
-                    Log.e(TAG, "Error parsing API key from response: " + e.getMessage());
-                }
+                Intent intent = new Intent(CodeSentActivity.this, MainActivity.class);
+                startActivity(intent);
+                finish();
             }
 
             @Override
