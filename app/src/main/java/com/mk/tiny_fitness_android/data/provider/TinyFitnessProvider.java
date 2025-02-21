@@ -59,7 +59,7 @@ public class TinyFitnessProvider {
 
         if (apiKey == null || apiKey.isEmpty()) {
             Log.e(TAG, "API Key missing. Redirecting to login.");
-            redirectToLogin(context);
+            redirectToRequestCode(context);
             return;
         }
 
@@ -80,23 +80,23 @@ public class TinyFitnessProvider {
                         uploadLastTraining();
                     } catch (IOException | JSONException e) {
                         Log.e(TAG, "Error reading API key from response: " + e.getMessage());
-                        redirectToLogin(context);
+                        redirectToRequestCode(context);
                     }
                 } else {
                     Log.e(TAG, "API key refresh failed. Response code: " + response.code());
-                    redirectToLogin(context);
+                    redirectToRequestCode(context);
                 }
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
                 Log.e(TAG, "API Request Failed: " + t.getMessage());
-                redirectToLogin(context);
+                redirectToRequestCode(context);
             }
         });
     }
 
-    private void redirectToLogin(Context context) {
+    private void redirectToRequestCode(Context context) {
         Intent intent = new Intent(context, RequestCodeActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         context.startActivity(intent);

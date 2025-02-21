@@ -28,7 +28,7 @@ public class SharedPreferencesHelper {
     }
 
     public boolean isFirstLaunch() {
-        boolean isFirstLaunch = sharedPreferences.getBoolean(FIRST_LAUNCH_KEY, true); // Default is true
+        boolean isFirstLaunch = sharedPreferences.getBoolean(FIRST_LAUNCH_KEY, true);
 
         if (isFirstLaunch) {
             saveDeviceId(Helper.generateDeviceId());

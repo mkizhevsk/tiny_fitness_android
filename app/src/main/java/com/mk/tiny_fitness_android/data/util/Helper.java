@@ -143,9 +143,9 @@ public class Helper {
     }
 
     public static String generateDeviceId() {
-        String manufacturer = Build.MANUFACTURER; // e.g., Samsung, Google
+        String manufacturer = Build.MANUFACTURER;
         String model = Build.MODEL;
-        String randomId = StringRandomGenerator.getInstance().getShortValue();// e.g., Galaxy S21, Pixel 6
+        String randomId = StringRandomGenerator.getInstance().getShortValue();
 
         return manufacturer + "_" + model + "_" + randomId;
     }

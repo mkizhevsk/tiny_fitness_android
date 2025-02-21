@@ -35,8 +35,5 @@
         <service
             android:name=".data.service.LocationService"
             android:description="@string/location_service_desc" />
-        <service
-            android:name=".data.service.TinyFitnessService"
-            android:description="@string/tiny_fitness_service_desc" />
     </application>
 </manifest>
