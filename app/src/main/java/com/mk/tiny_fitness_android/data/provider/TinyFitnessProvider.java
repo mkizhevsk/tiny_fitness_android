@@ -1,5 +1,7 @@
 package com.mk.tiny_fitness_android.data.provider;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
@@ -8,12 +10,15 @@ import android.util.Log;
 import com.mk.tiny_fitness_android.data.entity.Training;
 import com.mk.tiny_fitness_android.data.service.RetrofitService;
 import com.mk.tiny_fitness_android.data.util.Helper;
+import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
 import com.mk.tiny_fitness_android.ui.MainActivity;
+import com.mk.tiny_fitness_android.ui.RequestCodeActivity;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import okhttp3.ResponseBody;
@@ -23,15 +28,136 @@ import retrofit2.Response;
 
 public class TinyFitnessProvider {
 
-    private static TinyFitnessProvider ourInstance = new TinyFitnessProvider();
-    public static TinyFitnessProvider getInstance() {
-        return ourInstance;
-    }
+    private static TinyFitnessProvider instance;
+    private final Context context;
+    private List<Training> trainings;
+    private String email;
 
     private final String HTTPS_TINY_FITNESS_URL = "https://tiny-fitness.ru/api/";
+    //    private final String HTTPS_TINY_FITNESS_URL = "http://localhost:8080/api/";
     private final String HTTP_TINY_FITNESS_URL = "http://tiny-fitness.ru/api/";
 
     final String TAG = "myLogs";
+
+    private TinyFitnessProvider(Context context) {
+        this.context = context.getApplicationContext(); // Avoid Activity Context to prevent memory leaks
+    }
+
+    public static synchronized TinyFitnessProvider getInstance(Context context) {
+        if (instance == null) {
+            instance = new TinyFitnessProvider(context);
+        }
+        return instance;
+    }
+
+    public void authorize(Context context, List<Training> trainings) {
+        this.trainings = trainings;
+
+        SharedPreferencesHelper prefs = SharedPreferencesHelper.getInstance(context);
+        Log.d(TAG, "Stored API Key: " + prefs.getApiKey());
+        String apiKey = prefs.getApiKey();
+
+        if (apiKey == null || apiKey.isEmpty()) {
+            Log.e(TAG, "API Key missing. Redirecting to login.");
+            redirectToRequestCode(context);
+            return;
+        }
+
+        RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+
+        api.refreshApiKey(apiKey).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    try {
+                        String responseBody = response.body().string();
+                        JSONObject jsonResponse = new JSONObject(responseBody);
+                        String newApiKey = jsonResponse.getString("refreshedKey");
+
+                        Log.d(TAG, "API Key refreshed successfully: " + newApiKey);
+
+                        prefs.saveApiKey(newApiKey);
+                        uploadLastTraining();
+                    } catch (IOException | JSONException e) {
+                        Log.e(TAG, "Error reading API key from response: " + e.getMessage());
+                        redirectToRequestCode(context);
+                    }
+                } else {
+                    Log.e(TAG, "API key refresh failed. Response code: " + response.code());
+                    redirectToRequestCode(context);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.e(TAG, "API Request Failed: " + t.getMessage());
+                redirectToRequestCode(context);
+            }
+        });
+    }
+
+    private void redirectToRequestCode(Context context) {
+        Intent intent = new Intent(context, RequestCodeActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        context.startActivity(intent);
+    }
+
+    public void requestCode(String email, RequestCallback<String> callback) {
+
+        this.email = email;
+        RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+
+        Call<ResponseBody> call = api.requestCode(email);
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    callback.onSuccess("Verification code sent");
+                } else {
+                    callback.onFailure(new Exception("Failed to send verification code"));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                callback.onFailure(new Exception("Network error: " + t.getMessage()));
+            }
+        });
+    }
+
+    public void verifyCode(String code, RequestCallback<String> callback) {
+
+        String deviceId = SharedPreferencesHelper.getInstance(context).getDeviceId();
+        Log.d(TAG, "deviceId: " + deviceId);
+        RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+
+        Call<ResponseBody> call = api.verifyCode(this.email, code, deviceId);
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    try {
+                        String responseBody = response.body().string();
+                        callback.onSuccess(responseBody);
+                    } catch (IOException e) {
+                        callback.onFailure(new Exception("Error reading response"));
+                    }
+                } else {
+                    callback.onFailure(new Exception("Verification failed"));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                callback.onFailure(new Exception("Network error: " + t.getMessage()));
+            }
+        });
+    }
+
+    public interface RequestCallback<T> {
+        void onSuccess(T response);
+        void onFailure(Throwable t);
+    }
 
     public void uploadTraining(Training training) {
         Log.d(TAG, "uploadTraining start: " + Build.VERSION.SDK_INT);
@@ -80,9 +206,9 @@ public class TinyFitnessProvider {
 
                     @Override
                     public void onFailure(Call<ResponseBody> call, Throwable t) {
-                Log.d(TAG, "onFailure");
-            }
-        });
+                        Log.d(TAG, "onFailure");
+                    }
+                });
     }
 
     private Message getTinyFitnessMessage(int duration, double distance) {
@@ -96,18 +222,13 @@ public class TinyFitnessProvider {
         return message;
     }
 
-    public void uploadLastTraining(List<Training> trainings) {
-        if (trainings == null || trainings.isEmpty()) {
+    public void uploadLastTraining() {
+        if (this.trainings == null || this.trainings.isEmpty()) {
             Log.d(TAG, "No trainings to save.");
             return;
         }
 
-        Collections.sort(trainings, new Comparator<Training>() {
-            @Override
-            public int compare(Training t1, Training t2) {
-                return t2.getDateTime().compareTo(t1.getDateTime());
-            }
-        });
+        Collections.sort(trainings, (t1, t2) -> t2.getDateTime().compareTo(t1.getDateTime()));
 
         Training lastTraining = trainings.get(0);
         Log.d(TAG, "Most recent training found: " + lastTraining);

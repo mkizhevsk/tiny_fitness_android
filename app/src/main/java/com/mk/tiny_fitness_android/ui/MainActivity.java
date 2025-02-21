@@ -38,9 +38,9 @@ import com.mk.tiny_fitness_android.data.service.BaseService;
 import com.mk.tiny_fitness_android.data.service.LocationService;
 import com.mk.tiny_fitness_android.data.thread.DurationRunnable;
 import com.mk.tiny_fitness_android.data.util.Helper;
+import com.mk.tiny_fitness_android.data.util.SharedPreferencesHelper;
 import com.mk.tiny_fitness_android.data.util.StringRandomGenerator;
 
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -72,7 +72,10 @@ public class MainActivity extends AppCompatActivity {
     public static Handler tinyFitnessHandler;
 
     private BaseService baseService;
+    private boolean isBaseServiceBound = false;
+
     private LocationService locationService;
+    private boolean isLocationServiceBound = false;
 
     private int WEATHER_DURATION_COUNTER = 0;
     private final int WEATHER_DURATION_COUNTER_LIMIT = 30;
@@ -97,10 +100,42 @@ public class MainActivity extends AppCompatActivity {
         start = false;
         finish = false;
 
+        if (SharedPreferencesHelper.getInstance(this).isFirstLaunch()) {
+            Intent intent = new Intent(this, RequestCodeActivity.class);
+            startActivity(intent);
+            finish();
+        }
+
         if (checkPermissions(this, this)) {
             Log.d(TAG, "permission granted by default");
             startApp();
         }
+    }
+
+    public static boolean checkPermissions(Context context, Activity mainActivity) {
+        String[] permissions = new String[]{
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+        };
+
+        int result;
+        List<String> listPermissionsNeeded = new ArrayList<>();
+        for (String p : permissions) {
+            result = ContextCompat.checkSelfPermission(context, p);
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                listPermissionsNeeded.add(p);
+            }
+        }
+        if (!listPermissionsNeeded.isEmpty()) {
+            ActivityCompat.requestPermissions(mainActivity, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), 100);
+            return false;
+        }
+        return true;
+    }
+
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (grantResults.length > 1) startApp();
     }
 
     private void startApp() {
@@ -113,6 +148,43 @@ public class MainActivity extends AppCompatActivity {
         tinyFitnessHandler = getTinyFitnessHandler();
 
         startBaseService();
+    }
+
+    // top right menu
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(0, 1, 0, "training history");
+        menu.add(0, 2, 1, "edit city");
+        menu.add(0, 3, 2, "exit");
+
+        String versionName = BuildConfig.VERSION_NAME;
+        menu.add(0, 4, 3, "version: " + versionName).setEnabled(false); // Disabled so it's non-clickable
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case 1: // Training history
+                String deletedTracksInfo = Helper.getTrainingHistory(baseService.getTrainings());
+                Log.d(TAG, deletedTracksInfo);
+                Intent deletedIntent = new Intent(this, ListActivity.class);
+                deletedIntent.putExtra("content", deletedTracksInfo);
+                startActivity(deletedIntent);
+                break;
+
+            case 2:
+                Log.d(TAG, "edit city");
+                Intent intent = new Intent(this, EditActivity.class);
+                startActivity(intent);
+                break;
+
+            case 3: // Exit
+                finish();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     // handlers
@@ -189,14 +261,17 @@ public class MainActivity extends AppCompatActivity {
             WEATHER_DURATION_COUNTER = 0;
         }
 
-        durationTextView.setText(Helper.getStringDuration(training.getDuration()));
-        String kmUnit = this.getString(R.string.unit_km);
-        distanceTextView.setText(Helper.getStringDistance(training.getDistance(), kmUnit));
-        if (accuracy != -100)
-            accuracyTextView.setText(Helper.getStringAccuracy(accuracy));
+        if (training != null) {
+            durationTextView.setText(Helper.getStringDuration(training.getDuration()));
+            String kmUnit = this.getString(R.string.unit_km);
+            distanceTextView.setText(Helper.getStringDistance(training.getDistance(), kmUnit));
+            if (accuracy != -100)
+                accuracyTextView.setText(Helper.getStringAccuracy(accuracy));
+        }
     }
 
-    public void onClick(View view) {
+    // startFinishButton
+    public void onClickStartFinishButton(View view) {
         if(!start && !finish) {  //start training
             Log.d(TAG, "start button");
             startTraining();
@@ -245,7 +320,7 @@ public class MainActivity extends AppCompatActivity {
             training.setInternalCode(StringRandomGenerator.getInstance().getValue());
             training.setId((int) baseService.insertTraining(training));
 
-            TinyFitnessProvider.getInstance().uploadTraining(training);
+            TinyFitnessProvider.getInstance(this).uploadTraining(training);
         }
     }
 
@@ -274,47 +349,6 @@ public class MainActivity extends AppCompatActivity {
         createDialog.show();
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, 1, 0, "training history");
-        menu.add(0, 2, 1, "edit city");
-        menu.add(0, 3, 2, "exit");
-
-        String versionName = BuildConfig.VERSION_NAME;
-        menu.add(0, 4, 3, "version: " + versionName).setEnabled(false); // Disabled so it's non-clickable
-
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case 1: // Training history
-                String deletedTracksInfo;
-                try {
-                    deletedTracksInfo = Helper.getTrainingHistory(baseService.getTrainings());
-                } catch (ParseException e) {
-                    throw new RuntimeException(e);
-                }
-                Log.d(TAG, deletedTracksInfo);
-                Intent deletedIntent = new Intent(this, ListActivity.class);
-                deletedIntent.putExtra("content", deletedTracksInfo);
-                startActivity(deletedIntent);
-                break;
-
-            case 2:
-                Log.d(TAG, "edit city");
-                Intent intent = new Intent(this, EditActivity.class);
-                startActivity(intent);
-                break;
-
-            case 3: // Exit
-                finish(); // Close the activity and exit the app
-                break;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
     // BaseService
     private void startBaseService() {
         Log.d(TAG, "MainActivity startBaseService()");
@@ -327,22 +361,15 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             BaseService.LocalBinder binder = (BaseService.LocalBinder) service;
             baseService = binder.getService();
+            isBaseServiceBound = true;
             Log.d(TAG, "MainActivity baseService onServiceConnected");
 
-            List<Training> trainings;
-            try {
-                trainings = baseService.getTrainings();
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
+            List<Training> trainings = baseService.getTrainings();
             Log.d(TAG, "trainings " + trainings.size());
 
             startLocationService();
             WeatherProvider.getInstance(MainActivity.this).checkNetworkAndFetchWeather(MainActivity.this);
-            TinyFitnessProvider.getInstance().uploadLastTraining(trainings);
-//            for(Training training : trainings) {
-//                Log.d(TAG, training.toString());
-//            }
+            TinyFitnessProvider.getInstance(MainActivity.this).authorize(MainActivity.this, trainings);
         }
 
         @Override
@@ -358,10 +385,12 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, LocationService.class);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent);
+            startForegroundService(intent);  // Start foreground service
         } else {
-            bindService(intent, locationServiceConnection, Context.BIND_AUTO_CREATE);
+            startService(intent);  // Start normally for older versions
         }
+
+        bindService(intent, locationServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
     private ServiceConnection locationServiceConnection = new ServiceConnection() {
@@ -369,6 +398,7 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             LocationService.LocalBinder binder = (LocationService.LocalBinder) service;
             locationService = binder.getService();
+            isLocationServiceBound = true;
             Log.d(TAG, "MainActivity locationService onServiceConnected");
 
             LocationService.running = true;
@@ -381,30 +411,10 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    public static boolean checkPermissions(Context context, Activity mainActivity) {
-        String[] permissions = new String[]{
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-        };
-
-        int result;
-        List<String> listPermissionsNeeded = new ArrayList<>();
-        for (String p : permissions) {
-            result = ContextCompat.checkSelfPermission(context, p);
-            if (result != PackageManager.PERMISSION_GRANTED) {
-                listPermissionsNeeded.add(p);
-            }
-        }
-        if (!listPermissionsNeeded.isEmpty()) {
-            ActivityCompat.requestPermissions(mainActivity, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), 100);
-            return false;
-        }
-        return true;
-    }
-
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (grantResults.length > 1) startApp();
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "MainActivity onResume() - Checking and restarting services");
     }
 
     @Override
@@ -417,14 +427,17 @@ public class MainActivity extends AppCompatActivity {
         DurationRunnable.running = false;
 
         stopService(new Intent(this, BaseService.class));
-        if (baseServiceConnection != null)
+        if (baseServiceConnection != null && isBaseServiceBound) {
             unbindService(baseServiceConnection);
+            isBaseServiceBound = false;
+        }
 
         LocationService.running = false;
         stopService(new Intent(this, LocationService.class));
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O && locationServiceConnection != null)
+        if (locationServiceConnection != null && isLocationServiceBound) {
             unbindService(locationServiceConnection);
+            isLocationServiceBound = false;
+        }
 
         training = null;
 

@@ -106,15 +106,21 @@ public class BaseService extends Service {
         return trainings;
     }
 
-    public List<Training> getTrainings() throws ParseException {
+    public List<Training> getTrainings() {
         Log.d(TAG, "start getTrainings");
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        List<Training> trainings = new ArrayList<>();
 
-        Cursor trainingCursor = db.query(OtherProperties.TRAINING_TABLE, null, null, null, null, null, null);
-        List<Training> trainings = getCursorTrainings(trainingCursor);
+        try {
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            Cursor trainingCursor = db.query(OtherProperties.TRAINING_TABLE, null, null, null, null, null, null);
 
-        trainingCursor.close();
-        dbHelper.close();
+            trainings = getCursorTrainings(trainingCursor);
+
+            trainingCursor.close();
+            dbHelper.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error fetching trainings: " + e.getMessage(), e);
+        }
 
         return trainings;
     }

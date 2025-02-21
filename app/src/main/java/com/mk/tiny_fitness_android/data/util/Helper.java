@@ -1,5 +1,6 @@
 package com.mk.tiny_fitness_android.data.util;
 
+import android.os.Build;
 import android.text.Editable;
 
 import com.mk.tiny_fitness_android.data.entity.Training;
@@ -139,5 +140,13 @@ public class Helper {
                 .build();
 
         return retrofit.create(RetrofitService.class);
+    }
+
+    public static String generateDeviceId() {
+        String manufacturer = Build.MANUFACTURER;
+        String model = Build.MODEL;
+        String randomId = StringRandomGenerator.getInstance().getShortValue();
+
+        return manufacturer + "_" + model + "_" + randomId;
     }
 }

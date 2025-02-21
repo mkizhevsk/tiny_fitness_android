@@ -55,7 +55,7 @@
         android:layout_marginRight="32dp"
         android:alpha="0.5"
         android:background="@drawable/training_default_background"
-        android:onClick="onClick"
+        android:onClick="onClickStartFinishButton"
         android:text="Start"
         android:textSize="20sp"
         android:textColor="@color/greyText"
