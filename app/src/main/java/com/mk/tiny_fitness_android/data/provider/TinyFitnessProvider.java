@@ -138,10 +138,7 @@ public class TinyFitnessProvider {
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
                     try {
-                        String responseBody = response.body().string();
-                        JSONObject jsonResponse = new JSONObject(responseBody);
-                        String apiKey = jsonResponse.getString("apiKey");
-
+                        String apiKey = getJsonObject(response).getString("apiKey");
                         prefs.saveApiKey(apiKey);
                         Log.d(TAG, "saved apiKey: " + apiKey);
 
@@ -164,6 +161,11 @@ public class TinyFitnessProvider {
     public interface RequestCallback<T> {
         void onSuccess(T response);
         void onFailure(Throwable t);
+    }
+
+    private JSONObject getJsonObject(Response<ResponseBody> response) throws IOException, JSONException {
+        String responseBody = response.body().string();
+        return new JSONObject(responseBody);
     }
 
     public void uploadTrainingPost(Training training) {
@@ -204,13 +206,7 @@ public class TinyFitnessProvider {
 
                         if (response.isSuccessful() && response.body() != null) {
                             try {
-                                String responseBody = response.body().string();
-                                Log.d(TAG, "Response Body: " + responseBody);
-
-                                JSONObject jsonResponse = new JSONObject(responseBody);
-                                JSONObject result = jsonResponse.getJSONObject("result");
-                                int code = result.getInt("code");
-
+                                int code = getJsonObject(response).getInt("code");
                                 if (code == 1) {
                                     Log.d(TAG, "Training successfully saved.");
                                     MainActivity.tinyFitnessHandler.sendMessage(
