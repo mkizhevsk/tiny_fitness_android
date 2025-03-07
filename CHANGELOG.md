@@ -7,7 +7,11 @@ All notable changes to this project will be documented in this file.
 
 ## [1.2.0] - 2025-03-07
 ### Changed
-- fixed uploadTrainingPost  ([#4](https://github.com/mkizhevsk/tiny_fitness_android/pull/4))
+- updated sdk and gradle  ([#6](https://github.com/mkizhevsk/tiny_fitness_android/pull/6))
+
+## [1.1.2] - 2025-02-24
+### Changed
+- getJsonObject added  ([#5](https://github.com/mkizhevsk/tiny_fitness_android/pull/5))
 
 ## [1.1.1] - 2025-02-21
 ### Changed
