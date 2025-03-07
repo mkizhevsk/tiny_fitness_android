@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 - Placeholder for upcoming changes.
 
+## [1.2.0] - 2025-03-07
+### Changed
+- fixed uploadTrainingPost  ([#4](https://github.com/mkizhevsk/tiny_fitness_android/pull/4))
+
 ## [1.1.1] - 2025-02-21
 ### Changed
 - fixed uploadTrainingPost  ([#4](https://github.com/mkizhevsk/tiny_fitness_android/pull/4))
