@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 - Placeholder for upcoming changes.
 
+## [1.2.0] - 2025-03-07
+### Changed
+- updated sdk and gradle  ([#6](https://github.com/mkizhevsk/tiny_fitness_android/pull/6))
+
 ## [1.1.2] - 2025-02-24
 ### Changed
 - getJsonObject added  ([#5](https://github.com/mkizhevsk/tiny_fitness_android/pull/5))
