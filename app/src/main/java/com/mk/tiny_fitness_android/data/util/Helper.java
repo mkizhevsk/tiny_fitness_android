@@ -2,6 +2,7 @@ package com.mk.tiny_fitness_android.data.util;
 
 import android.os.Build;
 import android.text.Editable;
+import android.util.Base64;
 
 import com.mk.tiny_fitness_android.data.entity.Training;
 import com.mk.tiny_fitness_android.data.service.RetrofitService;
@@ -13,7 +14,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -24,6 +24,9 @@ public class Helper {
 
     private static final SimpleDateFormat dateTimeFormatForApi = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
     private static final SimpleDateFormat dateTimeFormatForDb = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+
+    private static final String API_LOGIN = "tiny_fitness_app";
+    private static final String API_PASSWORD = "wqlZTpmQcMwqJOnl02QG";
 
     public static String getStringFromDouble(double value) {
         return String.valueOf(upToOneDecimalPlace(value));
@@ -123,11 +126,17 @@ public class Helper {
         OkHttpClient client = new OkHttpClient.Builder()
                 .authenticator((route, response) -> {
                     Request request = response.request();
-                    if (request.header("Authorization") != null)
-                        // Логин и пароль неверны
+                    if (request.header("Authorization") != null) {
+                        // Login and password are incorrect
                         return null;
+                    }
+
+                    // Custom Base64 encoding for the Authorization header
+                    String credentials = API_LOGIN + ":" + API_PASSWORD;
+                    String authHeader = "Basic " + Base64.encodeToString(credentials.getBytes(), Base64.NO_WRAP);
+
                     return request.newBuilder()
-                            .header("Authorization", Credentials.basic("admin", "123"))
+                            .header("Authorization", authHeader)
                             .build();
                 })
                 .addInterceptor(loggingInterceptor)
