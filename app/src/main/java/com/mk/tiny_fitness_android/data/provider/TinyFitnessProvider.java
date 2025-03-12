@@ -35,7 +35,6 @@ public class TinyFitnessProvider {
     private String email;
 
     private final String HTTPS_TINY_FITNESS_URL = "https://tiny-fitness.ru/api/";
-    //    private final String HTTPS_TINY_FITNESS_URL = "http://localhost:8080/api/";
     private final String HTTP_TINY_FITNESS_URL = "http://tiny-fitness.ru/api/";
 
     final String TAG = "myLogs";
@@ -64,7 +63,7 @@ public class TinyFitnessProvider {
             return;
         }
 
-        RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+        RetrofitService api = getApiBySdk();
 
         api.refreshApiKey(apiKey).enqueue(new Callback<ResponseBody>() {
             @Override
@@ -106,7 +105,7 @@ public class TinyFitnessProvider {
     public void requestCode(String email, RequestCallback<String> callback) {
 
         this.email = email;
-        RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+        RetrofitService api = getApiWithAuthBySdk();
 
         Call<ResponseBody> call = api.requestCode(email);
         call.enqueue(new Callback<ResponseBody>() {
@@ -130,7 +129,7 @@ public class TinyFitnessProvider {
 
         SharedPreferencesHelper prefs = SharedPreferencesHelper.getInstance(context);
         String deviceId = prefs.getDeviceId();
-        RetrofitService api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
+        RetrofitService api = getApiWithAuthBySdk();
 
         Call<ResponseBody> call = api.verifyCode(this.email, code, deviceId);
         call.enqueue(new Callback<ResponseBody>() {
@@ -168,15 +167,30 @@ public class TinyFitnessProvider {
         return new JSONObject(responseBody);
     }
 
-    public void uploadTrainingPost(Training training) {
-        Log.d(TAG, "uploadTrainingPost start: " + Build.VERSION.SDK_INT);
+    private RetrofitService getApiBySdk() {
+        RetrofitService api;
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
+            api = Helper.getRetrofitApiWithUrl(HTTPS_TINY_FITNESS_URL);
+        } else {
+            api = Helper.getRetrofitApiWithUrl(HTTP_TINY_FITNESS_URL);
+        }
+        return api;
+    }
 
+    private RetrofitService getApiWithAuthBySdk() {
         RetrofitService api;
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
             api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
         } else {
             api = Helper.getRetrofitApiWithUrlAndAuth(HTTP_TINY_FITNESS_URL);
         }
+        return api;
+    }
+
+    public void uploadTrainingPost(Training training) {
+        Log.d(TAG, "uploadTrainingPost start: " + Build.VERSION.SDK_INT);
+
+        RetrofitService api = getApiBySdk();
 
         SharedPreferencesHelper prefs = SharedPreferencesHelper.getInstance(context);
         String apiKey = prefs.getApiKey();
@@ -226,58 +240,6 @@ public class TinyFitnessProvider {
                     @Override
                     public void onFailure(Call<ResponseBody> call, Throwable t) {
                         Log.e(TAG, "onFailure: " + t.getMessage());
-                    }
-                });
-    }
-
-    public void uploadTrainingGet(Training training) {
-        Log.d(TAG, "uploadTraining start: " + Build.VERSION.SDK_INT);
-
-        RetrofitService api;
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
-            api = Helper.getRetrofitApiWithUrlAndAuth(HTTPS_TINY_FITNESS_URL);
-        } else {
-            api = Helper.getRetrofitApiWithUrlAndAuth(HTTP_TINY_FITNESS_URL);
-        }
-
-        String date = Helper.getStringDateTimeForApi(training.getDateTime());
-        Log.d(TAG, date);
-        api.saveTraining(training.getInternalCode(), date, training.getDistance(), training.getDuration(), training.getType())
-                .enqueue(new Callback<ResponseBody>() {
-
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        Log.d(TAG, "onResponse " + response.isSuccessful());
-
-                        if (response.isSuccessful() && response.body() != null) {
-                            try {
-                                // Parse the response as a string
-                                String responseBody = response.body().string();
-                                Log.d(TAG, "Response Body: " + responseBody);
-
-                                // Convert the response string to a JSONObject
-                                JSONObject jsonResponse = new JSONObject(responseBody);
-                                JSONObject result = jsonResponse.getJSONObject("result"); // Access the "result" object
-                                int code = result.getInt("code"); // Get the "code" value
-
-                                if (code == 1) {
-                                    Log.d(TAG, "Training was successfully saved.");
-                                    MainActivity.tinyFitnessHandler.sendMessage(getTinyFitnessMessage(training.getDuration(), training.getDistance()));
-                                } else if (code == 0) {
-                                    Log.d(TAG, "Training already exists in the database.");
-                                }
-                            } catch (Exception e) {
-                                Log.e(TAG, "Error parsing response: " + e.getMessage());
-                            }
-                        } else {
-                            Log.d(TAG, "Response unsuccessful or empty body.");
-                        }
-                    }
-
-
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-                        Log.d(TAG, "onFailure");
                     }
                 });
     }
