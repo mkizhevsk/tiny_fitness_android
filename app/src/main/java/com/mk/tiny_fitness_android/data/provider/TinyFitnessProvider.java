@@ -164,7 +164,13 @@ public class TinyFitnessProvider {
 
     private JSONObject getJsonObject(Response<ResponseBody> response) throws IOException, JSONException {
         String responseBody = response.body().string();
-        return new JSONObject(responseBody);
+        JSONObject jsonResponse = new JSONObject(responseBody);
+
+        if (jsonResponse.has("result")) {
+            return jsonResponse.getJSONObject("result");
+        }
+
+        return jsonResponse;
     }
 
     private RetrofitService getApiBySdk() {
