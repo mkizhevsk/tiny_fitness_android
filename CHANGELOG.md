@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 - Placeholder for upcoming changes.
 
+## [1.2.1] - 2025-03-12
+### Changed
+- app icon added  ([#7](https://github.com/mkizhevsk/tiny_fitness_android/pull/7))
+
 ## [1.2.0] - 2025-03-07
 ### Changed
 - updated sdk and gradle  ([#6](https://github.com/mkizhevsk/tiny_fitness_android/pull/6))
