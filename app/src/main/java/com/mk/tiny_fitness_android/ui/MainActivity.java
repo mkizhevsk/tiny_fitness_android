@@ -320,6 +320,12 @@ public class MainActivity extends AppCompatActivity {
             training.setInternalCode(StringRandomGenerator.getInstance().getValue());
             training.setId((int) baseService.insertTraining(training));
 
+            List<Training> trainings = baseService.getTrainings();
+            Log.d(TAG, "trainings " + trainings.size());
+            if (!trainings.isEmpty())
+                trainings.remove(training);
+
+            TinyFitnessProvider.getInstance(MainActivity.this).authorize(trainings);
             TinyFitnessProvider.getInstance(this).uploadTrainingPost(training);
         }
     }
@@ -364,12 +370,8 @@ public class MainActivity extends AppCompatActivity {
             isBaseServiceBound = true;
             Log.d(TAG, "MainActivity baseService onServiceConnected");
 
-            List<Training> trainings = baseService.getTrainings();
-            Log.d(TAG, "trainings " + trainings.size());
-
             startLocationService();
             WeatherProvider.getInstance(MainActivity.this).checkNetworkAndFetchWeather(MainActivity.this);
-            TinyFitnessProvider.getInstance(MainActivity.this).authorize(trainings);
         }
 
         @Override
