@@ -6,6 +6,12 @@
 
     <string name="unit_km">km</string>
     <string name="default_distance">0.0 km</string>
+    <string name="default_duration">0 min</string>
+    <string name="accuracy_suffix">m</string>
+    <string name="duration_suffix">min</string>
+    <string name="temperature_suffix">°C</string>
+    <string name="no_data">No data</string>
+    <string name="no_fix">No GPS signal</string>
 
     <string name="finish">Finish</string>
 

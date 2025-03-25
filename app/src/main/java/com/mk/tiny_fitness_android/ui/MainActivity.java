@@ -229,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
             Bundle bundle = message.getData();
             temperature = bundle.getDouble("temperature");
 
-            temperatureTextView.setText(Helper.getStringTemperature(temperature));
+            temperatureTextView.setText(Helper.getStringTemperature(this, temperature));
             showCurrentData();
 
             return true;
@@ -262,11 +262,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (training != null) {
-            durationTextView.setText(Helper.getStringDuration(training.getDuration()));
+            durationTextView.setText(Helper.getStringDuration(this, training.getDuration()));
             String kmUnit = this.getString(R.string.unit_km);
             distanceTextView.setText(Helper.getStringDistance(training.getDistance(), kmUnit));
             if (accuracy != -100)
-                accuracyTextView.setText(Helper.getStringAccuracy(accuracy));
+                accuracyTextView.setText(Helper.getStringAccuracy(this, accuracy));
         }
     }
 
@@ -349,7 +349,7 @@ public class MainActivity extends AppCompatActivity {
                             distanceTextView.setText(String.valueOf(training.getDistance()));
                             startFinishButton.setText("...");
                         })
-                .setNegativeButton("Отмена",
+                .setNegativeButton("Cancel",
                         (dialog, id) -> dialog.cancel());
         AlertDialog createDialog = newPathDialogBuilder.create();
         createDialog.show();
