@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 - Placeholder for upcoming changes.
 
+## [1.3.2] - 2025-03-25
+### basic auth added
+- offline start fix  ([#10](https://github.com/mkizhevsk/tiny_fitness_android/pull/10))
+
 ## [1.3.1] - 2025-03-12
 ### basic auth added
 - old android support  ([#9](https://github.com/mkizhevsk/tiny_fitness_android/pull/9))
