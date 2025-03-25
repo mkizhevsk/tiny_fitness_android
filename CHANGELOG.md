@@ -5,16 +5,20 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 - Placeholder for upcoming changes.
 
+## [1.4.0] - 2025-03-25
+### Added
+- android 14 support added  ([#11](https://github.com/mkizhevsk/tiny_fitness_android/pull/11))
+
 ## [1.3.2] - 2025-03-25
-### basic auth added
+### Changed
 - offline start fix  ([#10](https://github.com/mkizhevsk/tiny_fitness_android/pull/10))
 
 ## [1.3.1] - 2025-03-12
-### basic auth added
+### Changed
 - old android support  ([#9](https://github.com/mkizhevsk/tiny_fitness_android/pull/9))
 
 ## [1.3.0] - 2025-03-12
-### basic auth added
+### Changed
 - basic auth added  ([#8](https://github.com/mkizhevsk/tiny_fitness_android/pull/8))
 
 ## [1.2.1] - 2025-03-12

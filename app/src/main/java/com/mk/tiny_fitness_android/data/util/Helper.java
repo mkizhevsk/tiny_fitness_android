@@ -1,9 +1,11 @@
 package com.mk.tiny_fitness_android.data.util;
 
+import android.content.Context;
 import android.os.Build;
 import android.text.Editable;
 import android.util.Base64;
 
+import com.mk.tiny_fitness_android.R;
 import com.mk.tiny_fitness_android.data.entity.Training;
 import com.mk.tiny_fitness_android.data.service.RetrofitService;
 
@@ -80,20 +82,20 @@ public class Helper {
         return System.getProperty("line.separator");
     }
 
-    public static String getStringTemperature(double temperature) {
-        return upToOneDecimalPlace(temperature) + " C";
+    public static String getStringTemperature(Context context, double temperature) {
+        return upToOneDecimalPlace(temperature) + " " + context.getString(R.string.temperature_suffix);
     }
 
-    public static String getStringDuration(int duration) {
-        return duration + " мин.";
+    public static String getStringDuration(Context context, int duration) {
+        return duration + " " + context.getString(R.string.duration_suffix);
     }
 
     public static String getStringDistance(double distance, String kmUnit) {
         return upToOneDecimalPlace(distance) + " " + kmUnit;
     }
 
-    public static String getStringAccuracy(float accuracy) {
-        return Math.round(accuracy) + " м";
+    public static String getStringAccuracy(Context context, float accuracy) {
+        return Math.round(accuracy) + " " + context.getString(R.string.accuracy_suffix);
     }
 
     public static float getSpeedInKmHour(float speedInMeterSecond) {
