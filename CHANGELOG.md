@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 - Placeholder for upcoming changes.
 
+## [1.4.1] - 2025-03-28
+### Added
+- arge screen support disabling  ([#12](https://github.com/mkizhevsk/tiny_fitness_android/pull/12))
+
 ## [1.4.0] - 2025-03-25
 ### Added
 - android 14 support added  ([#11](https://github.com/mkizhevsk/tiny_fitness_android/pull/11))
